@@ -76,4 +76,51 @@ class TestRecipe:
         ])
         assert len(recipe)==1
         assert recipe.ingredients[0].quantity==150.0
-        
+
+class TestIngredient:
+    def test_init_attributes(self):
+        ing=Ingredient("Гуанчале",150,"г")
+        assert ing.name=="Гуанчале"
+        assert ing.quantity==150.0
+        assert ing.unit=="г"
+
+    def test_quantity_is_float(self):
+        ing=Ingredient("Яйца",4,"шт")
+        assert isinstance(ing.quantity,float)
+
+    def test_quantity_positive_raises(self):
+        with pytest.raises(ValueError,match="Количество должно быть положительным"):
+            Ingredient("Пармезан",-1,"г")
+
+    def test_quantity_zero_raises(self):
+        with pytest.raises(ValueError):
+            Ingredient("Пармезан",0,"г")
+
+    def test_quantity_setter_validates(self):
+        ing=Ingredient("Гуанчале",150,"г")
+        with pytest.raises(ValueError):
+            ing.quantity=-50
+
+    def test_str(self):
+        ing=Ingredient("Пармезан",100,"г")
+        assert str(ing)=="Пармезан: 100.0 г"
+
+    def test_repr(self):
+        ing=Ingredient("Пармезан",100,"г")
+        assert repr(ing)=="Ingredient('Пармезан',100.0,'г')"
+
+    def test_eq_same_name_and_unit(self):
+        a=Ingredient("Масло",50,"г")
+        b=Ingredient("Масло",100,"г")
+        assert a==b
+
+    def test_eq_different_name(self):
+        a=Ingredient("Масло",100,"г")
+        b=Ingredient("Пармезан",100,"г")
+        assert a!=b
+
+    def test_eq_different_unit(self):
+        a=Ingredient("Масло",100,"г")
+        b=Ingredient("Масло",100,"мл")
+        assert a!=b
+
