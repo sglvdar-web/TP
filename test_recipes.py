@@ -124,3 +124,90 @@ class TestIngredient:
         b=Ingredient("Масло",100,"мл")
         assert a!=b
 
+@pytest.fixture
+def carbonara():
+    r=Recipe("Карбонара")
+    r.add_ingredient(Ingredient("Спагетти",200,"г"))
+    r.add_ingredient(Ingredient("Гуанчале",150,"г"))
+    r.add_ingredient(Ingredient("Яйца",4,"шт"))
+    r.add_ingredient(Ingredient("Пармезан",80,"г"))
+    return r
+
+@pytest.fixture
+def croissant():
+    r=Recipe("Круассан")
+    r.add_ingredient(Ingredient("Мука",500,"г"))
+    r.add_ingredient(Ingredient("Масло",250,"г"))
+    r.add_ingredient(Ingredient("Яйца",2,"шт"))
+    return r
+
+class TestShoppingList:
+    def test_add_recipe_adds_items(self,carbonara):
+        sl=ShoppingList()
+        sl.add_recipe(carbonara,1)
+        items=sl.get_list()
+        assert len(items)==4
+
+    def test_add_recipe_scales_portions(self,carbonara):
+        sl=ShoppingList()
+        sl.add_recipe(carbonara,2)
+        items={i.name:i.quantity for i in sl.get_list()}
+        assert items["Спагетти"]==400.0
+        assert items["Гуанчале"]==300.0
+
+    def test_add_recipe_invalid_portions(self,carbonara):
+        sl=ShoppingList()
+        with pytest.raises(ValueError,match="Количество порций должно быть положительным"):
+            sl.add_recipe(carbonara,0)
+        with pytest.raises(ValueError):
+            sl.add_recipe(carbonara,-2)
+
+    def test_remove_recipe_removes_items(self,carbonara,croissant):
+        sl=ShoppingList()
+        sl.add_recipe(carbonara,1)
+        sl.add_recipe(croissant,1)
+        sl.remove_recipe("Карбонара")
+        items={i.name for i in sl.get_list()}
+        assert "Гуанчале" not in items
+        assert "Спагетти" not in items
+        assert "Мука" in items
+
+    def test_remove_recipe_nonexistent(self,carbonara):
+        sl=ShoppingList()
+        sl.add_recipe(carbonara,1)
+        sl.remove_recipe("Борщ")
+        assert len(sl.get_list())==4
+
+    def test_get_list_sums_same_ingredients(self,carbonara,croissant):
+        sl=ShoppingList()
+        sl.add_recipe(carbonara,1)
+        sl.add_recipe(croissant,1)
+        items={i.name:i.quantity for i in sl.get_list()}
+        assert items["Яйца"]==6.0
+
+    def test_get_list_sorted(self,carbonara,croissant):
+        sl=ShoppingList()
+        sl.add_recipe(carbonara,1)
+        sl.add_recipe(croissant,1)
+        names=[i.name for i in sl.get_list()]
+        assert names==sorted(names)
+
+    def test_add_two_shopping_lists(self,carbonara,croissant):
+        sl1=ShoppingList()
+        sl1.add_recipe(carbonara,1)
+        sl2=ShoppingList()
+        sl2.add_recipe(croissant,1)
+        combined=sl1+sl2
+        items={i.name for i in combined.get_list()}
+        assert "Спагетти" in items
+        assert "Мука" in items
+        assert "Яйца" in items
+
+    def test_add_does_not_mutate_originals(self,carbonara,croissant):
+        sl1=ShoppingList()
+        sl1.add_recipe(carbonara,1)
+        sl2=ShoppingList()
+        sl2.add_recipe(croissant,1)
+        _=sl1+sl2
+        assert len(sl1.get_list())==4
+        assert len(sl2.get_list())==3
